@@ -61,7 +61,7 @@ const audioID = "SEU_ID_DO_GOOGLE_DRIVE_AQUI";
 
 O banner já está linkado para o WhatsApp da rádio:
 ```
-https://wa.me/595921153
+https://wa.me/595983921153
 ```
 Se precisar trocar o número, edite **todas** as ocorrências no `index.html`.
 
