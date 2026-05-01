@@ -83,6 +83,55 @@ let isSynced   = false;
 let isLoading  = false;
 let isPlaying  = false;
 
+// ─────────────────────────────────────────────────
+// Media Session API Setup
+// ─────────────────────────────────────────────────
+function setupMediaSession() {
+  if ('mediaSession' in navigator) {
+    navigator.mediaSession.metadata = new MediaMetadata({
+      title: 'Radio Joven Katuete',
+      artist: 'Ao Vivo',
+      album: 'Sintonizado',
+      artwork: [
+        { src: 'radiojovenlogo.png', sizes: '512x512', type: 'image/png' }
+      ]
+    });
+
+    // Controladores de reprodução básica
+    navigator.mediaSession.setActionHandler('play', () => {
+      if (!isPlaying) togglePlay();
+    });
+    navigator.mediaSession.setActionHandler('pause', () => {
+      if (isPlaying) togglePlay();
+    });
+
+    // Desativa/Oculta Seek Backward e Seek Forward
+    try {
+      navigator.mediaSession.setActionHandler('seekbackward', null);
+      navigator.mediaSession.setActionHandler('seekforward', null);
+    } catch (e) {
+      console.warn("MediaSession seek handlers not supported/removable.");
+    }
+
+    // Handler para seekto: ignora o tempo solicitado e força a sincronização real
+    navigator.mediaSession.setActionHandler('seekto', (details) => {
+      console.log("Seek ignorado. Sincronizando com o horário real.");
+      audio.currentTime = getSyncedTime();
+      updateMediaSessionPosition();
+    });
+  }
+}
+
+function updateMediaSessionPosition() {
+  if ('mediaSession' in navigator && 'setPositionState' in navigator.mediaSession) {
+    navigator.mediaSession.setPositionState({
+      duration: LOOP_DURATION,
+      playbackRate: audio.playbackRate,
+      position: audio.currentTime
+    });
+  }
+}
+
 function initAudio() {
   const directLink = getDropboxDirectLink(dropboxURL);
   if (!directLink) {
@@ -116,6 +165,8 @@ function syncAndPlay() {
         isPlaying = true;
         isLoading = false;
         setPlayingUI(true);
+        setupMediaSession();
+        updateMediaSessionPosition();
       })
       .catch((err) => {
         isLoading = false;
@@ -141,6 +192,8 @@ function syncAndPlay() {
             isLoading = false;
             setPlayingUI(true);
             setStatus("Ao vivo (sem sincronização exata)", "playing");
+            setupMediaSession();
+            updateMediaSessionPosition();
           })
           .catch(() => {
             isLoading = false;
@@ -166,6 +219,10 @@ function togglePlay() {
     initAudio();
     syncAndPlay();
   }
+  
+  if ('mediaSession' in navigator) {
+    navigator.mediaSession.playbackState = isPlaying ? "playing" : "paused";
+  }
 }
 
 // ─────────────────────────────────────────────────
@@ -175,6 +232,7 @@ function togglePlay() {
 document.addEventListener("visibilitychange", () => {
   if (!document.hidden && isPlaying) {
     audio.currentTime = getSyncedTime();
+    updateMediaSessionPosition();
   }
 });
 
