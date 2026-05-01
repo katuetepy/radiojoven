@@ -28,15 +28,17 @@ const volumeSlider= document.getElementById("volume-slider");
 function getDropboxDirectLink(url) {
   if (!url || url.includes("SUA_URL_DO_DROPBOX_AQUI")) return "";
   
-  // Para links do Dropbox funcionarem como streaming direto (e permitirem seek/currentTime):
-  // Precisamos substituir dl=0 (ou dl=1) por raw=1
-  if (url.includes("dl=")) {
-    return url.replace(/dl=[01]/, "raw=1");
+  // Converte para link de download direto
+  // Substitui www.dropbox.com por dl.dropboxusercontent.com e garante raw=1
+  let direct = url.replace("www.dropbox.com", "dl.dropboxusercontent.com");
+  
+  if (direct.includes("dl=")) {
+    direct = direct.replace(/dl=[01]/, "raw=1");
   } else {
-    // Se não tiver dl=, anexa o parâmetro corretamente
-    const separator = url.includes("?") ? "&" : "?";
-    return `${url}${separator}raw=1`;
+    const separator = direct.includes("?") ? "&" : "?";
+    direct = `${direct}${separator}raw=1`;
   }
+  return direct;
 }
 
 // ─────────────────────────────────────────────────
@@ -82,14 +84,19 @@ let isLoading  = false;
 let isPlaying  = false;
 
 function initAudio() {
-  if (!audio.src || audio.src === window.location.href) {
-    const directLink = getDropboxDirectLink(dropboxURL);
-    if (!directLink) {
-      setStatus("Configure o link do Dropbox no script.js", "error");
-      return;
-    }
-    audio.src = directLink;
+  const directLink = getDropboxDirectLink(dropboxURL);
+  if (!directLink) {
+    setStatus("Configure o link do Dropbox no script.js", "error");
+    return;
   }
+
+  // Só redefine se o src for diferente ou estiver vazio
+  if (!audio.src || !audio.src.includes(directLink.split('?')[0])) {
+    console.log("Inicializando áudio com URL:", directLink);
+    audio.src = directLink;
+    audio.load();
+  }
+  
   audio.loop   = true;
   audio.volume = parseFloat(volumeSlider.value);
 }
