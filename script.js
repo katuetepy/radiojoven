@@ -4,11 +4,11 @@
 =================================================== */
 
 // ─────────────────────────────────────────────────
-// CONFIG — Paste ONLY the Google Drive file ID here
+// CONFIG — Link real do Dropbox
 // ─────────────────────────────────────────────────
-const audioID = "1jH1r9w4fShcefF7qFGA51lES3qoigyr0";
+const dropboxURL = "https://www.dropbox.com/scl/fi/4vl338278et1vierr9d3z/radio-joven-1.mp3?rlkey=yblo717eeyx2fnk8fu48qjr3o&st=h74f7udr&dl=0";
 
-// Duration of the audio file in seconds (2 hours)
+// Duração do arquivo de áudio em segundos (2 horas = 7200s)
 const LOOP_DURATION = 7200;
 
 // ─────────────────────────────────────────────────
@@ -23,10 +23,20 @@ const equalizer   = document.getElementById("equalizer");
 const volumeSlider= document.getElementById("volume-slider");
 
 // ─────────────────────────────────────────────────
-// Build Google Drive streaming URL
+// Processa o link do Dropbox para streaming direto
 // ─────────────────────────────────────────────────
-function buildDriveURL(id) {
-  return `https://docs.google.com/uc?export=download&id=${id}`;
+function getDropboxDirectLink(url) {
+  if (!url || url.includes("SUA_URL_DO_DROPBOX_AQUI")) return "";
+  
+  // Para links do Dropbox funcionarem como streaming direto (e permitirem seek/currentTime):
+  // Precisamos substituir dl=0 (ou dl=1) por raw=1
+  if (url.includes("dl=")) {
+    return url.replace(/dl=[01]/, "raw=1");
+  } else {
+    // Se não tiver dl=, anexa o parâmetro corretamente
+    const separator = url.includes("?") ? "&" : "?";
+    return `${url}${separator}raw=1`;
+  }
 }
 
 // ─────────────────────────────────────────────────
@@ -73,7 +83,12 @@ let isPlaying  = false;
 
 function initAudio() {
   if (!audio.src || audio.src === window.location.href) {
-    audio.src = buildDriveURL(audioID);
+    const directLink = getDropboxDirectLink(dropboxURL);
+    if (!directLink) {
+      setStatus("Configure o link do Dropbox no script.js", "error");
+      return;
+    }
+    audio.src = directLink;
   }
   audio.loop   = true;
   audio.volume = parseFloat(volumeSlider.value);
@@ -178,7 +193,7 @@ audio.addEventListener("error", (e) => {
   isPlaying = false;
   setPlayingUI(false);
   console.error("Erro no áudio:", e);
-  setStatus("Erro ao carregar o áudio. Verifique o ID do Drive.", "error");
+  setStatus("Erro ao carregar o áudio. Verifique o link do Dropbox.", "error");
 });
 
 // ─────────────────────────────────────────────────
